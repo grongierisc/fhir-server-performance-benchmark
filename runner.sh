@@ -128,6 +128,14 @@ run_test_on_server() {
                 export CONTENT_TYPE=application/fhir+json
                 export PREFER=return=representation"
             ;;
+        "intersystems_revision")
+            run_env="${run_env}
+                export BASE_URL=http://intersystems-revision:52773/fhir/r4
+                export AUTH_USER=fhir
+                export AUTH_PASSWORD=fhir
+                export CONTENT_TYPE=application/fhir+json
+                export PREFER=return=representation"
+            ;;
         "medplum")
             run_env="${run_env}
                 export BASE_URL=http://medplum:8103/fhir/R4

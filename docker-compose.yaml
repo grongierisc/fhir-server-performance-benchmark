@@ -229,6 +229,40 @@ services:
       - "13120:52773"
 
 ## ------------------------------------------------
+## InterSystems IRIS for Health (FHIR R4)
+## ------------------------------------------------
+## Set up like https://github.com/intersystems-community/iris-fhir-template
+## (FHIRSERVER namespace, JsonAdvSql storage, endpoint /fhir/r4), but installed
+## on start by infra/intersystems/fhir-server.sh rather than at image build —
+## see that script for why. IRIS keeps FHIR data in its own embedded database,
+## so this one container is app + datastore: its budget is the FHIR app's
+## (8 cpu / 24G) plus the datastore's (8 cpu / 30G), like microsoft + mssql.
+## Community Edition caps IRIS at 20 cores and 8 license units.
+  intersystems_revision:
+    container_name: perf-intersystems-revision
+    image: intersystemsdc/irishealth-community:latest
+    pull_policy: always
+    # Run iris-main directly: the image's wrapper entrypoint fails its own
+    # post-start step on 2026.1 (irissqlcli "dbapi.connect") and shuts IRIS down.
+    # -a runs the FHIR install once IRIS is up; if it fails, IRIS stops.
+    entrypoint: ["/tini", "--", "/iris-main"]
+    command: ["--check-caps", "false", "--ISCAgent", "false", "-a", "/opt/intersystems/fhir-server.sh"]
+    # As for microsoft: the first-start install can lose a race with IRIS's own
+    # background startup; restart instead of failing the whole bootstrap.
+    restart: on-failure
+    environment:
+      ISC_CPF_MERGE_FILE: /opt/intersystems/merge.cpf
+    volumes:
+      - ./infra/intersystems-revision:/opt/intersystems:ro
+    healthcheck:
+      test: test -f /tmp/fhir-ready
+      interval: 10s
+      start_period: 60s
+      retries: 60
+    ports:
+      - "13121:52773"
+
+## ------------------------------------------------
 ## Medplum
 ## ------------------------------------------------
   medplum:
